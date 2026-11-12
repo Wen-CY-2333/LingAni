@@ -1,0 +1,35 @@
+/* 主题变量：取值参考播放源站点的 CSS 变量 */
+:root {
+  color-scheme: dark;
+
+  /* 品牌色（播放源品牌粉） */
+  --color-brand-600: 358 68% 66%;
+  --color-brand-500: 357 71% 71%;
+  --color-brand-400: 7 85% 80%;
+  --color-yellow-500: 36 89% 73%;
+  --color-blue-400: 205 85% 72%;
+
+  /* 主题色 */
+  --background: 0 0% 7%;
+  --foreground: 220 6% 88%;
+  --card: 0 0% 12%;
+  --card-foreground: 220 6% 88%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 228 2% 55%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+
+  --brand: var(--color-brand-500);
+  --brand-strong: var(--color-brand-600);
+  --brand-subtle: 357 30% 14%;
+  --score: var(--color-yellow-500);
+  --update: var(--color-blue-400);
+
+  --radius: 0.5rem;
+
+  /* 布局 */
+  --header-height: 60px;
+  --container-max: 1560px;
+  --container-padding: 40px;
+  --grid-gap: 21px;
+}

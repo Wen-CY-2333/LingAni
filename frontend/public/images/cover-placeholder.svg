@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="160" viewBox="0 0 120 160">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#262626" />
+      <stop offset="1" stop-color="#171717" />
+    </linearGradient>
+  </defs>
+  <rect width="120" height="160" fill="url(#g)" />
+  <path d="M48 70h24a6 6 0 0 1 6 6v14a6 6 0 0 1-6 6H48a6 6 0 0 1-6-6v-14a6 6 0 0 1 6-6Z" fill="none" stroke="#8a8b8f" stroke-width="3" />
+  <path d="M52 64l8-10 8 10" fill="none" stroke="#8a8b8f" stroke-width="3" stroke-linecap="round" />
+  <text x="60" y="122" fill="#8a8b8f" font-size="11" font-family="PingFang SC, sans-serif" text-anchor="middle">封面加载失败</text>
+</svg>

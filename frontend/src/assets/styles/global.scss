@@ -1,0 +1,248 @@
+@use './variables.scss';
+@use './reset.scss';
+
+/* 品牌展示字体：站酷快乐体（按需子集，仅含「灵漫 LingAni」用字，OFL 授权） */
+@font-face {
+  font-family: 'LingAni Display';
+  src: url('/fonts/lingman-display.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: 'PingFang SC', -apple-system, 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: 0;
+}
+
+/* 与播放源一致的 1560px 内容宽度 */
+.container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 var(--container-padding);
+}
+
+/* 让页面主体撑满可视高度，页脚始终贴底 */
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.page {
+  padding-top: var(--header-height);
+  flex: 1 0 auto;
+}
+
+/* 通用图标按钮 */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: hsl(var(--muted-foreground));
+  background-color: hsl(var(--muted));
+  transition: color 0.2s ease, background-color 0.2s ease;
+
+  &:hover {
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--border));
+  }
+}
+
+/* 品牌按钮 */
+.btn-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background-color: hsl(var(--brand));
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  transition: filter 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    filter: brightness(1.06);
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    filter: none;
+  }
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    background-color: hsl(var(--border));
+  }
+}
+
+/* 徽章 */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* 区块标题 */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+
+  &::before {
+    content: '';
+    width: 4px;
+    height: 18px;
+    border-radius: 2px;
+    background-color: hsl(var(--brand));
+  }
+}
+
+.section-title--lg {
+  font-size: 25.5px;
+
+  &::before {
+    display: none;
+  }
+}
+
+/* 卡片容器 */
+.surface {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+}
+
+/* 状态提示 */
+.state-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 160px;
+  padding: 32px 16px;
+  border-radius: 12px;
+  background-color: hsl(var(--card));
+  color: hsl(var(--muted-foreground));
+  font-size: 14px;
+  text-align: center;
+}
+
+.state-box__title {
+  color: hsl(var(--foreground));
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.state-box__hint {
+  max-width: 420px;
+  line-height: 1.7;
+}
+
+.state-box__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* 骨架屏 */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: hsl(var(--muted));
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+    animation: skeleton-sweep 1.4s infinite;
+  }
+}
+
+@keyframes skeleton-sweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background-color: hsl(var(--border));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground));
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+@media (max-width: 1200px) {
+  :root {
+    --container-padding: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --container-padding: 18px;
+  }
+}
