@@ -16,6 +16,7 @@ const year = new Date().getFullYear()
         <RouterLink to="/category">分类</RouterLink>
         <RouterLink to="/schedule">追番周表</RouterLink>
         <RouterLink to="/rank">排行榜</RouterLink>
+        <RouterLink to="/settings/mascot">看板娘设置</RouterLink>
       </div>
     </div>
     <div class="footer-bottom">

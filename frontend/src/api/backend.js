@@ -1,7 +1,8 @@
 import axios from 'axios'
 import { clearAuth, getToken } from '@/stores/auth'
 
-export const BACKEND_BASE_URL = (import.meta.env.VITE_BACKEND_BASE_URL).replace(/\/+$/, '')
+// 留空时使用同源地址，由 Vite 代理转发到 Spring Boot
+export const BACKEND_BASE_URL = (import.meta.env.VITE_BACKEND_BASE_URL || '').replace(/\/+$/, '')
 
 const backend = axios.create({
   baseURL: BACKEND_BASE_URL,
@@ -166,6 +167,23 @@ export function sendDanmaku(payload) {
 
 export function deleteDanmaku(id) {
   return backend.delete(`/api/danmaku/${id}`)
+}
+
+/* ---------------- 站内通知 ---------------- */
+export function getNotifications(params = {}) {
+  return backend.get('/api/notifications', { params })
+}
+
+export function getUnreadNotificationCount() {
+  return backend.get('/api/notifications/unread-count')
+}
+
+export function markNotificationRead(id) {
+  return backend.post(`/api/notifications/${id}/read`)
+}
+
+export function markAllNotificationsRead() {
+  return backend.post('/api/notifications/read-all')
 }
 
 /* ---------------- 管理后台 ---------------- */

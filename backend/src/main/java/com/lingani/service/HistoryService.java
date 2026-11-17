@@ -3,6 +3,7 @@ package com.lingani.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import tools.jackson.databind.JsonNode;
 import com.lingani.common.BizException;
 import com.lingani.common.PageResult;
 import com.lingani.common.PageUtils;
@@ -24,6 +25,7 @@ import java.util.List;
 public class HistoryService {
 
     private final UserHistoryMapper historyMapper;
+    private final CycaniService cycaniService;
 
     @Transactional
     public UserHistory save(HistorySaveRequest request) {
@@ -94,7 +96,33 @@ public class HistoryService {
                         .eq(UserHistory::getUserId, userId)
                         .orderByDesc(UserHistory::getLastPlayedAt)
                         .orderByDesc(UserHistory::getId));
+        // 封面不入数据库（第三方地址会过期），返回前用 CycAni 最新详情填充
+        page.getRecords().parallelStream().forEach(this::enrichFromCycAni);
         return PageUtils.of(page.getRecords(), page.getTotal(), pageCurrent, pageSize);
+    }
+
+    /** 用 CycAni 最新详情填充历史记录的封面 */
+    private void enrichFromCycAni(UserHistory history) {
+        try {
+            JsonNode detail = cycaniService.getVideoDetail(history.getVideoId());
+            if (detail == null) return;
+            String cover = text(detail, "cover_url", "cover", "animeCover", "pic");
+            if (StringUtils.hasText(cover)) history.setAnimeCover(cover);
+        } catch (Exception exception) {
+            // 第三方接口异常时保留封面为空，前端显示占位图
+        }
+    }
+
+    private String text(JsonNode node, String... fields) {
+        if (node == null || fields == null) return null;
+        for (String field : fields) {
+            JsonNode value = node.get(field);
+            if (value != null && !value.isNull()) {
+                String text = value.asText("");
+                if (StringUtils.hasText(text)) return text;
+            }
+        }
+        return null;
     }
 
     @Transactional
@@ -117,7 +145,6 @@ public class HistoryService {
     private void fill(UserHistory history, HistorySaveRequest request, long progress, long duration) {
         history.setVideoId(request.getVideoId().trim());
         history.setAnimeTitle(StringUtils.hasText(request.getAnimeTitle()) ? request.getAnimeTitle().trim() : null);
-        history.setAnimeCover(StringUtils.hasText(request.getAnimeCover()) ? request.getAnimeCover().trim() : null);
         history.setEpisodeTitle(StringUtils.hasText(request.getEpisodeTitle()) ? request.getEpisodeTitle().trim() : null);
         history.setProgress(progress);
         history.setDuration(duration);

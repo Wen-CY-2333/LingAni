@@ -211,18 +211,17 @@ public class AdminService {
                         .like(StringUtils.hasText(keyword), UserFavorite::getAnimeTitle, keyword)
                         .orderByDesc(UserFavorite::getCreatedAt));
         Map<Long, SysUser> users = userMap(result.getRecords().stream().map(UserFavorite::getUserId).toList());
-        List<AdminFavoriteVO> records = result.getRecords().stream()
+        List<AdminFavoriteVO> voList = result.getRecords().stream()
                 .map(favorite -> AdminFavoriteVO.builder()
                         .id(favorite.getId())
                         .userId(favorite.getUserId())
                         .username(displayName(users.get(favorite.getUserId())))
                         .videoId(favorite.getVideoId())
                         .animeTitle(favorite.getAnimeTitle())
-                        .animeCover(favorite.getAnimeCover())
                         .createdAt(favorite.getCreatedAt())
                         .build())
                 .toList();
-        return PageUtils.of(records, result.getTotal(), page, pageSize);
+        return PageUtils.of(voList, result.getTotal(), page, pageSize);
     }
 
     public PageResult<AdminHistoryVO> listHistory(Long current, Long size, String keyword) {

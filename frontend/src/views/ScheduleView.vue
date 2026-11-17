@@ -27,7 +27,7 @@ async function load() {
   error.value = ''
   try {
     const data = await getWeekday()
-    groups.value = Array.isArray(data?.list) ? data.list : []
+    groups.value = Array.isArray(data?.records) ? data.records : []
     selected.value = todayWeekday()
   } catch (err) {
     groups.value = []

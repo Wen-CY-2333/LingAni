@@ -1,9 +1,15 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ChevronDown, Heart, History, LogOut, Search, ShieldCheck, UserRound } from 'lucide-vue-next'
+import { Bell, ChevronDown, Heart, History, LogOut, Palette, Search, ShieldCheck, UserRound } from 'lucide-vue-next'
 import { authState, clearAuth, isLoggedIn } from '@/stores/auth'
-import { logout as logoutRequest } from '@/api/backend'
+import {
+  getNotifications,
+  getUnreadNotificationCount,
+  logout as logoutRequest,
+  markAllNotificationsRead,
+  markNotificationRead
+} from '@/api/backend'
 import { showToast } from '@/utils/toast'
 
 const route = useRoute()
@@ -13,6 +19,13 @@ const searchInput = ref('')
 const menuOpen = ref(false)
 const userAreaRef = ref(null)
 const avatarFailed = ref(false)
+
+const noticeAreaRef = ref(null)
+const noticeOpen = ref(false)
+const noticeLoading = ref(false)
+const notifications = ref([])
+const unreadCount = ref(0)
+let noticeTimer = null
 
 const isHome = computed(() => route.path === '/')
 const solidHeader = computed(() => !isHome.value || scrolled.value)
@@ -49,10 +62,81 @@ function closeMenu() {
 }
 
 function onDocumentClick(event) {
-  if (!userAreaRef.value) return
-  if (!userAreaRef.value.contains(event.target)) {
+  if (userAreaRef.value && !userAreaRef.value.contains(event.target)) {
     closeMenu()
   }
+  if (noticeAreaRef.value && !noticeAreaRef.value.contains(event.target)) {
+    noticeOpen.value = false
+  }
+}
+
+/* ---------------- 站内通知 ---------------- */
+async function loadUnreadCount() {
+  if (!isLoggedIn.value) {
+    unreadCount.value = 0
+    return
+  }
+  try {
+    unreadCount.value = Number(await getUnreadNotificationCount()) || 0
+  } catch {
+    unreadCount.value = 0
+  }
+}
+
+async function toggleNotifications() {
+  noticeOpen.value = !noticeOpen.value
+  closeMenu()
+  if (!noticeOpen.value) return
+  noticeLoading.value = true
+  try {
+    const data = await getNotifications({ current: 1, size: 10 })
+    notifications.value = data?.records || []
+  } catch {
+    notifications.value = []
+  } finally {
+    noticeLoading.value = false
+  }
+}
+
+async function handleNoticeClick(item) {
+  if (!item.isRead) {
+    try {
+      await markNotificationRead(item.id)
+      item.isRead = 1
+      unreadCount.value = Math.max(0, unreadCount.value - 1)
+    } catch {
+      // 标记失败不阻断跳转
+    }
+  }
+  if (item.videoId) {
+    noticeOpen.value = false
+    router.push(`/anime/${item.videoId}`)
+  }
+}
+
+async function handleReadAll() {
+  try {
+    await markAllNotificationsRead()
+    notifications.value = notifications.value.map((item) => ({ ...item, isRead: 1 }))
+    unreadCount.value = 0
+  } catch (error) {
+    showToast(error.message || '操作失败', 'error')
+  }
+}
+
+function onNotificationsRefresh() {
+  loadUnreadCount()
+}
+
+function formatNoticeTime(value) {
+  if (!value) return ''
+  const date = new Date(String(value).replace(' ', 'T'))
+  if (Number.isNaN(date.getTime())) return ''
+  const diff = Date.now() - date.getTime()
+  if (diff < 60_000) return '刚刚'
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`
+  return `${date.getMonth() + 1} 月 ${date.getDate()} 日`
 }
 
 async function handleLogout() {
@@ -76,6 +160,8 @@ watch(
   () => {
     searchInput.value = route.path === '/search' ? String(route.query.q || '') : ''
     closeMenu()
+    noticeOpen.value = false
+    loadUnreadCount()
   },
   { immediate: true }
 )
@@ -88,11 +174,16 @@ onMounted(() => {
   onScroll()
   window.addEventListener('scroll', onScroll, { passive: true })
   document.addEventListener('click', onDocumentClick)
+  window.addEventListener('lingani:notifications-refresh', onNotificationsRefresh)
+  loadUnreadCount()
+  noticeTimer = window.setInterval(loadUnreadCount, 60_000)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', onScroll)
   document.removeEventListener('click', onDocumentClick)
+  window.removeEventListener('lingani:notifications-refresh', onNotificationsRefresh)
+  window.clearInterval(noticeTimer)
 })
 </script>
 
@@ -122,6 +213,47 @@ onBeforeUnmount(() => {
             enterkeyhint="search"
           />
         </form>
+
+        <div v-if="isLoggedIn" ref="noticeAreaRef" class="notice-area">
+          <button
+            type="button"
+            class="notice-trigger"
+            :aria-expanded="noticeOpen"
+            aria-label="站内通知"
+            @click="toggleNotifications"
+          >
+            <Bell :size="17" />
+            <span v-if="unreadCount > 0" class="notice-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+          </button>
+
+          <div v-if="noticeOpen" class="notice-menu" role="dialog" aria-label="站内通知">
+            <div class="notice-head">
+              <span>站内通知</span>
+              <button v-if="unreadCount > 0" type="button" class="notice-read-all" @click="handleReadAll">
+                全部已读
+              </button>
+            </div>
+            <div class="notice-list">
+              <button
+                v-for="item in notifications"
+                :key="item.id"
+                type="button"
+                class="notice-item"
+                :class="{ 'is-unread': !item.isRead }"
+                @click="handleNoticeClick(item)"
+              >
+                <span class="notice-item-title">
+                  <span v-if="!item.isRead" class="notice-dot" />
+                  {{ item.title }}
+                </span>
+                <span class="notice-item-content">{{ item.content }}</span>
+                <span class="notice-item-time">{{ formatNoticeTime(item.createdAt) }}</span>
+              </button>
+              <p v-if="noticeLoading" class="notice-empty">加载中…</p>
+              <p v-else-if="!notifications.length" class="notice-empty">暂时没有新通知</p>
+            </div>
+          </div>
+        </div>
 
         <div v-if="isLoggedIn" ref="userAreaRef" class="user-area">
           <button
@@ -153,6 +285,9 @@ onBeforeUnmount(() => {
             </RouterLink>
             <RouterLink to="/user/history" class="menu-item" role="menuitem" @click="closeMenu">
               <History :size="15" /> 播放历史
+            </RouterLink>
+            <RouterLink to="/settings/mascot" class="menu-item" role="menuitem" @click="closeMenu">
+              <Palette :size="15" /> 看板娘设置
             </RouterLink>
             <RouterLink v-if="isAdmin" to="/admin" class="menu-item" role="menuitem" @click="closeMenu">
               <ShieldCheck :size="15" /> 管理后台
@@ -309,6 +444,129 @@ onBeforeUnmount(() => {
   &::-webkit-search-cancel-button {
     display: none;
   }
+}
+
+.notice-area {
+  position: relative;
+}
+
+.notice-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.04);
+  color: hsl(var(--muted-foreground));
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+
+  &:hover {
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--brand) / 0.45);
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.notice-badge {
+  position: absolute;
+  top: -3px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background-color: hsl(var(--brand));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+}
+
+.notice-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid hsl(var(--border));
+  background-color: rgba(24, 24, 27, 0.97);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.notice-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.notice-read-all {
+  font-size: 12px;
+  color: hsl(var(--brand));
+}
+
+.notice-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.notice-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  text-align: left;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+}
+
+.notice-item-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.notice-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: hsl(var(--brand));
+  flex-shrink: 0;
+}
+
+.notice-item-content {
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.5;
+}
+
+.notice-item-time {
+  font-size: 11px;
+  color: hsl(var(--muted-foreground) / 0.8);
+}
+
+.notice-empty {
+  padding: 18px 0;
+  text-align: center;
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
 }
 
 .user-area {

@@ -22,6 +22,8 @@ public class UserFavorite {
 
     private String animeTitle;
 
+    /** 封面不入库，列表返回前实时从 CycAni 拉取，避免地址过期。 */
+    @TableField(exist = false)
     private String animeCover;
 
     @TableField(fill = FieldFill.INSERT)

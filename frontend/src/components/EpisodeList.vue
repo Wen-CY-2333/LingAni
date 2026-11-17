@@ -48,11 +48,6 @@ function playTarget(section) {
   <section class="episode-list" :class="{ 'is-dense': dense }">
     <div class="head">
       <h2 class="section-title">选集</h2>
-      <span class="count">共 {{ sections.length }} 话</span>
-    </div>
-
-    <div class="toolbar">
-      <span v-if="groupTitle" class="group-pill">{{ groupTitle }}</span>
       <button
         v-if="sections.length > 1"
         type="button"
@@ -60,9 +55,10 @@ function playTarget(section) {
         :title="ascending ? '当前为正序，点击切换为倒序' : '当前为倒序，点击切换为正序'"
         @click="ascending = !ascending"
       >
-        <ArrowDownUp :size="13" />
+        <ArrowDownUp :size="11" />
         {{ ascending ? '正序' : '倒序' }}
       </button>
+      <span class="count">共 {{ sections.length }} 话</span>
     </div>
 
     <div v-if="ordered.length" class="grid">
@@ -96,44 +92,28 @@ function playTarget(section) {
 
 .head {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.count {
-  font-size: 12.5px;
-  color: hsl(var(--muted-foreground));
-}
-
-.toolbar {
-  display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 12px;
 }
 
-.group-pill {
-  display: inline-flex;
-  align-items: center;
-  height: 30px;
-  padding: 0 14px;
-  border-radius: 999px;
-  background-color: hsl(var(--brand));
-  color: #fff;
+.count {
+  align-self: flex-end;
+  margin-left: auto;
   font-size: 12.5px;
-  font-weight: 600;
+  color: hsl(var(--muted-foreground));
 }
 
 .sort-btn {
+  align-self: flex-end;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 30px;
-  padding: 0 10px;
+  gap: 3px;
+  height: 24px;
+  padding: 0 8px;
   border-radius: 6px;
   border: 1px solid hsl(var(--border));
-  font-size: 12px;
+  font-size: 11px;
   color: hsl(var(--muted-foreground));
   transition: color 0.2s ease, border-color 0.2s ease;
 

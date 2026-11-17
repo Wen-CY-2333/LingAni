@@ -11,6 +11,7 @@ import RegisterView from '../views/RegisterView.vue'
 import UserView from '../views/UserView.vue'
 import UserFavoritesView from '../views/UserFavoritesView.vue'
 import UserHistoryView from '../views/UserHistoryView.vue'
+import MascotSettingsView from '../views/MascotSettingsView.vue'
 import AdminLayout from '../views/admin/AdminLayout.vue'
 import AdminDashboardView from '../views/admin/AdminDashboardView.vue'
 import AdminUsersView from '../views/admin/AdminUsersView.vue'
@@ -33,6 +34,7 @@ const router = createRouter({
     { path: '/user', name: 'user', component: UserView, meta: { requiresAuth: true } },
     { path: '/user/favorites', name: 'user-favorites', component: UserFavoritesView, meta: { requiresAuth: true } },
     { path: '/user/history', name: 'user-history', component: UserHistoryView, meta: { requiresAuth: true } },
+    { path: '/settings/mascot', name: 'mascot-settings', component: MascotSettingsView },
     {
       path: '/admin',
       component: AdminLayout,

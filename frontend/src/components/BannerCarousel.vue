@@ -75,7 +75,7 @@ async function goWatch(banner) {
   try {
     if (banner.action_type === 'video' || /^\d+$/.test(String(banner.action_value))) {
       const data = await getSections(banner.action_value)
-      const first = data?.list?.[0]
+      const first = data?.records?.[0]
       if (first) {
         router.push(`/anime/${banner.action_value}/play/${first.id}`)
         return

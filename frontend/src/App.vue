@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
 import AppFooter from './components/AppFooter.vue'
 import AppToast from './components/AppToast.vue'
+import AgentChat from './components/AgentChat.vue'
 import { getMe } from '@/api/backend'
 import { isLoggedIn, setUser } from '@/stores/auth'
 import { showToast } from '@/utils/toast'
@@ -50,6 +51,7 @@ onBeforeUnmount(() => {
     </div>
   </main>
   <AppFooter v-if="!isAuthPage && !isAdminPage" />
+  <AgentChat v-if="!isAuthPage && !isAdminPage" />
   <AppToast />
 </template>
 

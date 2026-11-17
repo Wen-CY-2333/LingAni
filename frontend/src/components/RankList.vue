@@ -18,7 +18,7 @@ async function loadVideos(id) {
   try {
     const data = await getRankVideos(id)
     if (current !== requestId) return
-    videos.value = Array.isArray(data?.list) ? data.list : []
+    videos.value = Array.isArray(data?.records) ? data.records : []
   } catch (err) {
     if (current !== requestId) return
     videos.value = []
@@ -33,7 +33,7 @@ async function loadRanks() {
   error.value = ''
   try {
     const data = await getRanks()
-    ranks.value = Array.isArray(data?.list) ? data.list : []
+    ranks.value = Array.isArray(data?.records) ? data.records : []
     if (ranks.value.length) {
       activeId.value = ranks.value[0].id
       await loadVideos(activeId.value)

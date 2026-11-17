@@ -1,10 +1,11 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Heart, ListVideo, Loader2, Play, RefreshCw } from 'lucide-vue-next'
+import { Heart, Loader2, Play, RefreshCw } from 'lucide-vue-next'
 import { getRecommendations, getSections, getVideoDetail } from '@/api/anime'
 import { addFavorite, checkFavorite, deleteFavorite, getVideoHistory } from '@/api/backend'
 import { isLoggedIn } from '@/stores/auth'
+import { clearAgentPageContext, setAgentPageContext } from '@/stores/agentContext'
 import { formatCount, formatScore, plainDescription, remarkText } from '@/utils/format'
 import { showError, showSuccess } from '@/utils/toast'
 import EpisodeList from '@/components/EpisodeList.vue'
@@ -79,16 +80,28 @@ async function loadDetail() {
 
   if (current !== requestId) return
 
-  sections.value = sectionResult.status === 'fulfilled' && Array.isArray(sectionResult.value?.list)
-    ? sectionResult.value.list
+  sections.value = sectionResult.status === 'fulfilled' && Array.isArray(sectionResult.value?.records)
+    ? sectionResult.value.records
     : []
-  recommendations.value = recommendResult.status === 'fulfilled' && Array.isArray(recommendResult.value?.list)
-    ? recommendResult.value.list
+  recommendations.value = recommendResult.status === 'fulfilled' && Array.isArray(recommendResult.value?.records)
+    ? recommendResult.value.records
     : []
   loading.value = false
 }
 
 watch(videoId, loadDetail, { immediate: true })
+
+/** 详情页同样属于陪伴场景：把自己正在看的作品告诉小灵，避免它反问是哪部。 */
+watch(
+  videoId,
+  (id) => {
+    if (!id) return
+    setAgentPageContext({ page: 'detail', current_video_id: String(id) })
+  },
+  { immediate: true }
+)
+
+onBeforeUnmount(() => clearAgentPageContext())
 
 async function loadFavorite(current) {
   if (!isLoggedIn.value) return
@@ -138,8 +151,7 @@ async function toggleFavorite() {
     } else {
       const data = await addFavorite({
         videoId: videoId.value,
-        animeTitle: video.value?.title || '',
-        animeCover: video.value?.cover_url || ''
+        animeTitle: video.value?.title || ''
       })
       favorited.value = true
       favoriteId.value = data?.id || null
@@ -150,10 +162,6 @@ async function toggleFavorite() {
   } finally {
     favoriteBusy.value = false
   }
-}
-
-function scrollToEpisodes() {
-  document.getElementById('episodes')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 </script>
 
@@ -228,10 +236,6 @@ function scrollToEpisodes() {
               <Loader2 v-if="favoriteBusy || favoriteLoading" :size="15" class="spin" />
               <Heart v-else :size="15" :fill="favorited ? 'currentColor' : 'none'" />
               {{ favorited ? '已追番' : '加入追番' }}
-            </button>
-            <button type="button" class="btn-ghost" @click="scrollToEpisodes">
-              <ListVideo :size="15" />
-              查看选集
             </button>
           </div>
         </div>

@@ -24,6 +24,7 @@ public class UserHistory {
 
     private String animeTitle;
 
+    @TableField(exist = false)
     private String animeCover;
 
     private String episodeTitle;

@@ -13,7 +13,4 @@ public class FavoriteAddRequest {
 
     @Size(max = 255, message = "动画名称过长")
     private String animeTitle;
-
-    @Size(max = 500, message = "动画封面地址过长")
-    private String animeCover;
 }

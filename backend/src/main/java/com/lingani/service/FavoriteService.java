@@ -3,6 +3,7 @@ package com.lingani.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import tools.jackson.databind.JsonNode;
 import com.lingani.common.BizException;
 import com.lingani.common.PageResult;
 import com.lingani.common.PageUtils;
@@ -18,12 +19,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class FavoriteService {
 
     private final UserFavoriteMapper favoriteMapper;
+    private final CycaniService cycaniService;
 
     @Transactional
     public UserFavorite add(FavoriteAddRequest request) {
@@ -39,7 +42,6 @@ public class FavoriteService {
         favorite.setUserId(userId);
         favorite.setVideoId(videoId);
         favorite.setAnimeTitle(StringUtils.hasText(request.getAnimeTitle()) ? request.getAnimeTitle().trim() : null);
-        favorite.setAnimeCover(StringUtils.hasText(request.getAnimeCover()) ? request.getAnimeCover().trim() : null);
         favorite.setCreatedAt(LocalDateTime.now());
 
         try {
@@ -60,7 +62,36 @@ public class FavoriteService {
                         .eq(UserFavorite::getUserId, userId)
                         .orderByDesc(UserFavorite::getCreatedAt)
                         .orderByDesc(UserFavorite::getId));
-        return PageUtils.of(page.getRecords(), page.getTotal(), pageCurrent, pageSize);
+        List<UserFavorite> records = page.getRecords();
+        // 封面不入数据库（第三方地址会过期），返回前用 CycAni 最新详情填充封面与标题
+        records.parallelStream().forEach(this::enrichFromCycAni);
+        return PageUtils.of(records, page.getTotal(), pageCurrent, pageSize);
+    }
+
+    /** 用 CycAni 最新详情填充追番记录的封面与标题 */
+    private void enrichFromCycAni(UserFavorite favorite) {
+        try {
+            JsonNode detail = cycaniService.getVideoDetail(favorite.getVideoId());
+            if (detail == null) return; // 第三方接口异常时保留已存信息，不影响列表展示
+            String cover = text(detail, "cover_url", "cover", "animeCover", "pic");
+            if (StringUtils.hasText(cover)) favorite.setAnimeCover(cover);
+            String title = text(detail, "title", "animeTitle", "name");
+            if (StringUtils.hasText(title)) favorite.setAnimeTitle(title);
+        } catch (Exception exception) {
+            // 第三方接口异常时保留已存信息，不影响列表展示
+        }
+    }
+
+    private String text(JsonNode node, String... fields) {
+        if (node == null || fields == null) return null;
+        for (String field : fields) {
+            JsonNode value = node.get(field);
+            if (value != null && !value.isNull()) {
+                String text = value.asText("");
+                if (StringUtils.hasText(text)) return text;
+            }
+        }
+        return null;
     }
 
     public FavoriteCheckVO check(String videoId) {

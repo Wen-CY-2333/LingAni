@@ -18,6 +18,5 @@ public class AdminFavoriteVO {
     private String username;
     private String videoId;
     private String animeTitle;
-    private String animeCover;
     private LocalDateTime createdAt;
 }

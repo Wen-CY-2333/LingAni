@@ -1,6 +1,7 @@
 package com.lingani.config;
 
-import com.lingani.security.JwtAuthenticationFilter;
+import com.lingani.security.AgentJwtAuthenticationFilter;
+import com.lingani.security.UserJwtAuthenticationFilter;
 import com.lingani.security.RestAuthHandlers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -24,7 +25,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final UserJwtAuthenticationFilter userJwtAuthenticationFilter;
+    private final AgentJwtAuthenticationFilter agentJwtAuthenticationFilter;
     private final RestAuthHandlers restAuthHandlers;
     private final CorsProperties corsProperties;
 
@@ -53,7 +55,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/cycani/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(userJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(agentJwtAuthenticationFilter, UserJwtAuthenticationFilter.class);
 
         return http.build();
     }

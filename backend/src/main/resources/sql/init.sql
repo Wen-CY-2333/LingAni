@@ -36,7 +36,6 @@ CREATE TABLE IF NOT EXISTS `user_history` (
     `video_id`       VARCHAR(100) NOT NULL COMMENT '播放源动画 ID',
     `section_id`     VARCHAR(100) NOT NULL COMMENT '播放源章节 ID',
     `anime_title`    VARCHAR(255)          DEFAULT NULL COMMENT '动画名称快照',
-    `anime_cover`    VARCHAR(500)          DEFAULT NULL COMMENT '动画封面快照',
     `episode_title`  VARCHAR(255)          DEFAULT NULL COMMENT '章节名称',
     `progress`       BIGINT       NOT NULL DEFAULT 0 COMMENT '播放进度（秒）',
     `duration`       BIGINT       NOT NULL DEFAULT 0 COMMENT '视频总时长（秒）',
@@ -56,7 +55,6 @@ CREATE TABLE IF NOT EXISTS `user_favorite` (
     `user_id`     BIGINT       NOT NULL COMMENT '用户 ID',
     `video_id`    VARCHAR(100) NOT NULL COMMENT '播放源动画 ID',
     `anime_title` VARCHAR(255)          DEFAULT NULL COMMENT '动画名称快照',
-    `anime_cover` VARCHAR(500)          DEFAULT NULL COMMENT '动画封面快照',
     `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '收藏时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_favorite_user_video` (`user_id`, `video_id`),
@@ -99,3 +97,21 @@ CREATE TABLE IF NOT EXISTS `anime_danmaku` (
     KEY `idx_danmaku_section` (`section_id`, `status`, `time`),
     KEY `idx_danmaku_user` (`user_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '弹幕表';
+
+-- ----------------------------
+-- 站内通知表
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `user_notification` (
+    `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `user_id`     BIGINT       NOT NULL COMMENT '接收用户 ID',
+    `type`        VARCHAR(32)  NOT NULL DEFAULT 'favorite_update' COMMENT '通知类型',
+    `title`       VARCHAR(255) NOT NULL COMMENT '通知标题',
+    `content`     VARCHAR(500) NOT NULL COMMENT '通知内容',
+    `video_id`    VARCHAR(100)          DEFAULT NULL COMMENT '关联动画 ID',
+    `is_read`     TINYINT      NOT NULL DEFAULT 0 COMMENT '是否已读：0 未读，1 已读',
+    `biz_date`    DATE                  DEFAULT NULL COMMENT '业务日期，用于同一天去重',
+    `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_notification_user_video_date` (`user_id`, `video_id`, `biz_date`),
+    KEY `idx_notification_user_read` (`user_id`, `is_read`, `created_at`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '站内通知表';

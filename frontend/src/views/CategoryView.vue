@@ -84,8 +84,12 @@ async function load() {
       pageSize: PAGE_SIZE
     })
     if (current !== requestId) return
-    videos.value = Array.isArray(data?.list) ? data.list : []
-    pager.value = data?.pager ?? { page: filters.page, page_size: PAGE_SIZE, total: 0 }
+    videos.value = Array.isArray(data?.records) ? data.records : []
+    pager.value = {
+      page: data?.current ?? filters.page,
+      page_size: data?.size ?? PAGE_SIZE,
+      total: data?.total ?? 0
+    }
   } catch (err) {
     if (current !== requestId) return
     videos.value = []

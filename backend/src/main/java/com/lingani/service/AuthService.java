@@ -6,7 +6,7 @@ import com.lingani.dto.LoginRequest;
 import com.lingani.dto.RegisterRequest;
 import com.lingani.entity.SysUser;
 import com.lingani.mapper.SysUserMapper;
-import com.lingani.security.JwtUtil;
+import com.lingani.security.UserJwtService;
 import com.lingani.security.TokenBlacklistService;
 import com.lingani.vo.LoginVO;
 import com.lingani.vo.UserVO;
@@ -26,7 +26,7 @@ public class AuthService {
 
     private final SysUserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
+    private final UserJwtService userJwtService;
     private final LoginAttemptService loginAttemptService;
     private final TokenBlacklistService tokenBlacklistService;
 
@@ -78,11 +78,11 @@ public class AuthService {
 
         loginAttemptService.reset(attemptKey);
         int tokenVersion = user.getTokenVersion() == null ? 0 : user.getTokenVersion();
-        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), tokenVersion);
+        String token = userJwtService.issue(user.getId(), user.getUsername(), tokenVersion);
         return LoginVO.builder()
                 .token(token)
                 .tokenType("Bearer")
-                .expiresIn(jwtUtil.getExpireSeconds())
+                .expiresIn(userJwtService.getTtlSeconds())
                 .user(toUserVO(user))
                 .build();
     }
@@ -92,7 +92,7 @@ public class AuthService {
             return;
         }
         try {
-            Claims claims = jwtUtil.parse(token);
+            Claims claims = userJwtService.verify(token);
             if (claims.getExpiration() != null) {
                 tokenBlacklistService.revoke(claims.getId(), claims.getExpiration().toInstant());
             }

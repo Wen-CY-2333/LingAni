@@ -11,7 +11,9 @@
     "artplayer": "^5.4.0",
     "artplayer-plugin-danmuku": "^5.3.0",
     "axios": "^1.21.0",
+    "dompurify": "^3.4.17",
     "lucide-vue-next": "^0.577.0",
+    "marked": "^18.2.0",
     "sass": "^1.108.1",
     "vue": "^3.5.44",
     "vue-router": "^5.4.0"

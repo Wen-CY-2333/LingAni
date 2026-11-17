@@ -1,11 +1,12 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ChevronLeft, Loader2, MessageSquarePlus, RefreshCw, Send, Star, Trash2 } from 'lucide-vue-next'
 import { getRecommendations, getSections, getVideoDetail } from '@/api/anime'
 import { getPlayUrl } from '@/api/section'
 import { deleteDanmaku, getDanmaku, getVideoHistory, saveHistory, sendDanmaku } from '@/api/backend'
 import { authState, isLoggedIn } from '@/stores/auth'
+import { clearAgentPageContext, setAgentPageContext } from '@/stores/agentContext'
 import { toDanmakuItems, hexToInt } from '@/utils/danmaku'
 import { formatCount, formatScore, plainDescription, remarkText } from '@/utils/format'
 import { formatDuration } from '@/utils/datetime'
@@ -54,6 +55,19 @@ const videoId = computed(() => route.params.videoId)
 const sectionId = computed(() => route.params.sectionId)
 const sectionHistory = ref({})
 const historyLoaded = ref(false)
+
+/** 把当前播放位置同步给小灵，便于续播与防剧透。 */
+watchEffect(() => {
+  if (!videoId.value) return
+  setAgentPageContext({
+    page: 'play',
+    current_video_id: String(videoId.value),
+    current_section_id: sectionId.value ? String(sectionId.value) : undefined,
+    progress: Math.max(0, Math.floor(Number(playback.value.time) || 0))
+  })
+})
+
+onBeforeUnmount(() => clearAgentPageContext())
 
 // 续播位置：优先使用 URL 上的 ?t=，否则取当前章节的历史进度
 const resumeTime = computed(() => {
@@ -134,11 +148,11 @@ async function loadVideo() {
     videoError.value = detailResult.reason?.message || '番剧信息加载失败'
   }
 
-  sections.value = sectionResult.status === 'fulfilled' && Array.isArray(sectionResult.value?.list)
-    ? sectionResult.value.list
+  sections.value = sectionResult.status === 'fulfilled' && Array.isArray(sectionResult.value?.records)
+    ? sectionResult.value.records
     : []
-  recommendations.value = recommendResult.status === 'fulfilled' && Array.isArray(recommendResult.value?.list)
-    ? recommendResult.value.list
+  recommendations.value = recommendResult.status === 'fulfilled' && Array.isArray(recommendResult.value?.records)
+    ? recommendResult.value.records
     : []
   loadingVideo.value = false
 }
@@ -225,7 +239,6 @@ async function persistHistory(snapshot) {
       videoId: String(snapshot.videoId),
       sectionId: String(snapshot.sectionId),
       animeTitle: video.value.title || '',
-      animeCover: video.value.cover_url || '',
       episodeTitle: snapshot.episodeTitle || '',
       progress: saved.progress,
       duration: saved.duration

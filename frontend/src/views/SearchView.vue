@@ -45,8 +45,12 @@ async function load() {
   try {
     const data = await searchVideos(keyword.value, { page: page.value, pageSize: PAGE_SIZE })
     if (current !== requestId) return
-    videos.value = Array.isArray(data?.list) ? data.list : []
-    pager.value = data?.pager ?? { page: page.value, page_size: PAGE_SIZE, total: 0 }
+    videos.value = Array.isArray(data?.records) ? data.records : []
+    pager.value = {
+      page: data?.current ?? page.value,
+      page_size: data?.size ?? PAGE_SIZE,
+      total: data?.total ?? 0
+    }
   } catch (err) {
     if (current !== requestId) return
     videos.value = []

@@ -31,7 +31,7 @@ async function loadBanners() {
   bannersError.value = ''
   try {
     const data = await getBanners()
-    banners.value = Array.isArray(data?.list) ? data.list : []
+    banners.value = Array.isArray(data?.records) ? data.records : []
   } catch (err) {
     banners.value = []
     bannersError.value = err.message || 'Banner 加载失败'
@@ -45,7 +45,7 @@ async function loadRecommend() {
   recommendError.value = ''
   try {
     const data = await getRecommend()
-    groups.value = Array.isArray(data?.list) ? data.list : []
+    groups.value = Array.isArray(data?.records) ? data.records : []
   } catch (err) {
     groups.value = []
     recommendError.value = err.message || '推荐内容加载失败'
@@ -59,7 +59,7 @@ async function loadWeekday() {
   weekdayError.value = ''
   try {
     const data = await getWeekday()
-    weekday.value = Array.isArray(data?.list) ? data.list : []
+    weekday.value = Array.isArray(data?.records) ? data.records : []
   } catch (err) {
     weekday.value = []
     weekdayError.value = err.message || '追番周表加载失败'

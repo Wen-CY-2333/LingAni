@@ -18,24 +18,34 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * 解析 X-Agent-JWT 头中的 Agent 委托令牌（AGENT JWT），建立请求级用户身份。
+ * <p>
+ * 仅对个人数据接口放行：Python Agent 代表已登录用户访问 /api/history/**、/api/favorites/** 时，
+ * 必须携带 Spring Boot 签发的短期委托令牌；普通请求头（如 X-User-Id）不会建立任何身份。
+ * <p>
+ * 与 {@link UserJwtAuthenticationFilter} 对称：一个处理长期身份凭据，一个处理短期委托凭据。
+ */
 @Component
 @RequiredArgsConstructor
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class AgentJwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String BEARER_PREFIX = "Bearer ";
-
-    private final JwtUtil jwtUtil;
-    private final TokenBlacklistService tokenBlacklistService;
+    private final AgentJwtService agentJwtService;
     private final SysUserMapper userMapper;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        return !(path.startsWith("/api/history") || path.startsWith("/api/favorites"));
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        String header = request.getHeader("Authorization");
-        if (header != null && header.startsWith(BEARER_PREFIX)) {
-            String token = header.substring(BEARER_PREFIX.length()).trim();
-            if (!token.isEmpty()) {
-                authenticate(token);
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            String token = request.getHeader(AgentJwtService.HEADER_NAME);
+            if (token != null && !token.isBlank()) {
+                authenticate(token.trim());
             }
         }
         filterChain.doFilter(request, response);
@@ -43,33 +53,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private void authenticate(String token) {
         try {
-            Claims claims = jwtUtil.parse(token);
-            if (tokenBlacklistService.isRevoked(claims.getId())) {
-                return;
-            }
-
+            Claims claims = agentJwtService.verify(token);
             Long userId = Long.valueOf(claims.getSubject());
-            Integer claimVersion = claims.get("tv", Integer.class);
 
             SysUser user = userMapper.selectById(userId);
             if (user == null || user.getStatus() == null || user.getStatus() != 1) {
                 return;
             }
-            if (user.getTokenVersion() != null && claimVersion != null
-                    && !user.getTokenVersion().equals(claimVersion)) {
-                return;
-            }
 
             LoginUser loginUser = new LoginUser(user.getId(), user.getUsername(), user.getNickname(),
                     user.getAvatar(), user.getRole());
-            List<SimpleGrantedAuthority> authorities = loginUser.isAdmin()
-                    ? List.of(new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority("ROLE_ADMIN"))
-                    : List.of(new SimpleGrantedAuthority("ROLE_USER"));
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    loginUser, null, authorities);
+                    loginUser, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (JwtException | IllegalArgumentException ignored) {
-            // Token 无效或过期时保持匿名，后续由受保护接口返回 401
+            // Token 无效或过期时保持匿名，由受保护接口返回 401
         }
     }
 }
