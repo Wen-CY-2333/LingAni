@@ -15,30 +15,8 @@ def _env(name: str, default: str | None = None) -> str:
     return value
 
 
-def _env_int(name: str, default: int) -> int:
-    raw = os.getenv(name)
-    if raw is None or raw == "":
-        return default
-    try:
-        return int(raw)
-    except ValueError as exc:
-        raise RuntimeError(f"环境变量 {name} 必须是整数") from exc
-
-
-def _env_float(name: str, default: float) -> float:
-    raw = os.getenv(name)
-    if raw is None or raw == "":
-        return default
-    try:
-        return float(raw)
-    except ValueError as exc:
-        raise RuntimeError(f"环境变量 {name} 必须是数字") from exc
-
-
 @dataclass(frozen=True)
 class Settings:
-    agent_host: str
-    agent_port: int
     cors_origins: tuple[str, ...]
 
     llm_provider: str
@@ -69,33 +47,31 @@ class Settings:
 
 _llm_provider = os.getenv("LLM_PROVIDER", "deepseek").strip().lower()
 _deepseek_api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
+_ollama_base_url = os.getenv("OLLAMA_BASE_URL", "").strip()
 if _llm_provider == "deepseek" and not _deepseek_api_key:
     raise RuntimeError("LLM_PROVIDER=deepseek 时必须配置 DEEPSEEK_API_KEY")
+if _llm_provider == "ollama" and not _ollama_base_url:
+    raise RuntimeError("LLM_PROVIDER=ollama 时必须配置 OLLAMA_BASE_URL")
 
 
 settings = Settings(
-    agent_host=os.getenv("AGENT_HOST", "127.0.0.1"),
-    agent_port=_env_int("AGENT_PORT", 8000),
-    cors_origins=tuple(
-        origin.strip()
-        for origin in os.getenv(
-            "AGENT_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
-        ).split(",")
-        if origin.strip()
-    ),
+    cors_origins=("http://localhost:5173", "http://127.0.0.1:5173"),
     llm_provider=_llm_provider,
-    llm_temperature=_env_float("LLM_TEMPERATURE", _env_float("OLLAMA_TEMPERATURE", 0.3)),
-    llm_timeout_seconds=_env_float("LLM_TIMEOUT_SECONDS", _env_float("OLLAMA_TIMEOUT_SECONDS", 120)),
-    ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+    llm_temperature=0.3,
+    llm_timeout_seconds=120,
+    # 默认为空：使用 Ollama 时在 .env 中填写实际可访问地址
+    ollama_base_url=_ollama_base_url,
     ollama_model=os.getenv("OLLAMA_MODEL", "qwen2.5:7b"),
     deepseek_api_key=_deepseek_api_key,
-    deepseek_base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/"),
-    deepseek_model=os.getenv("DEEPSEEK_MODEL", "deepseek-chat"),
+    deepseek_base_url="https://api.deepseek.com",
+    deepseek_model="deepseek-flash",
+    # 本地为 localhost:8080；Docker 中由 compose 注入 http://backend:8080
     backend_base_url=os.getenv("BACKEND_BASE_URL", "http://localhost:8080").rstrip("/"),
-    backend_timeout_seconds=_env_float("BACKEND_TIMEOUT_SECONDS", 15),
-    agent_jwt_audience=os.getenv("AGENT_JWT_AUDIENCE", "lingani-agent"),
-    agent_jwt_issuer=os.getenv("AGENT_JWT_ISSUER", "lingani-backend"),
+    backend_timeout_seconds=15,
+    # 需与后端 application.yml 中 lingani.jwt.agent 的固定值保持一致
+    agent_jwt_audience="lingani-agent",
+    agent_jwt_issuer="lingani-backend",
     agent_jwt_secret=_env("AGENT_JWT_SECRET"),
-    agent_jwt_ttl_seconds=_env_int("AGENT_JWT_TTL_SECONDS", 300),
-    max_history_messages=_env_int("AGENT_MAX_HISTORY_MESSAGES", 20),
+    agent_jwt_ttl_seconds=300,
+    max_history_messages=20,
 )

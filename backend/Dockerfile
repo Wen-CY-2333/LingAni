@@ -1,0 +1,21 @@
+# 灵漫后端：Spring Boot + JDK 17
+FROM maven:3.9-eclipse-temurin-17 AS build
+WORKDIR /build
+
+# 使用国内 Maven 镜像，服务器无法访问 Maven Central 时也能构建
+COPY maven-settings.xml /root/.m2/settings.xml
+
+COPY pom.xml ./
+COPY src ./src
+RUN mvn -B -DskipTests package
+
+FROM eclipse-temurin:17-jre
+WORKDIR /app
+
+ENV TZ=Asia/Shanghai \
+    JAVA_OPTS="-Xms256m -Xmx512m -Duser.timezone=Asia/Shanghai"
+
+COPY --from=build /build/target/*.jar app.jar
+
+EXPOSE 8080
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

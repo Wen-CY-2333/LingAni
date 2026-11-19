@@ -351,13 +351,13 @@ done    → {"thread_id": "xxx", "works": [...], "actions": [...]}
 
 - 缺少 `AGENT_JWT_SECRET`；
 - `LLM_PROVIDER=deepseek` 但 `DEEPSEEK_API_KEY` 为空；
-- 数值型变量（端口、温度、超时、历史条数）无法解析。
+- `LLM_PROVIDER=ollama` 但 `OLLAMA_BASE_URL` 为空。
 
-兼容旧变量名：`LLM_TEMPERATURE` ← `OLLAMA_TEMPERATURE`，`LLM_TIMEOUT_SECONDS` ← `OLLAMA_TIMEOUT_SECONDS`。
+温度、超时、端口、历史条数等已改为固定值，不再读取环境变量。
 
 ### 3.13 当前 LLM 配置
 
-- Provider 默认 `deepseek`（`deepseek-chat`），可通过 `LLM_PROVIDER=ollama` 切换到本地 `qwen2.5:7b`
+- Provider 默认 `deepseek`（`deepseek-flash`），可通过 `LLM_PROVIDER=ollama` 切换到本地 `qwen2.5:7b`
 - Temperature 0.3（较保守，减少幻觉）
 - Max history messages: 20（工具消息 + 对话消息合计）
 - Recursion limit: 20（防止工具调用死循环）
@@ -370,7 +370,7 @@ done    → {"thread_id": "xxx", "works": [...], "actions": [...]}
 ### `GET /health`
 
 ```json
-{ "status": "ok", "service": "lingani-agent", "model": "deepseek-chat" }
+{ "status": "ok", "service": "lingani-agent", "model": "deepseek-flash" }
 ```
 
 ### `POST /api/agent/chat`
@@ -435,23 +435,22 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000
 3. 本 Agent 服务（8000）
 4. 前端（5173，`npm run dev`）
 
-环境要求：Python 3.11+（当前验证环境 Python 3.14）。
+环境要求：Python 3.11+（Docker 镜像基于 3.13）。生产部署见根目录 [README](../README.md)。
 
 ---
 
 ## 六、LLM Provider 配置
 
+可通过环境变量覆盖的项：
+
 | 变量 | 说明 | 默认 |
 |------|------|------|
 | `LLM_PROVIDER` | `deepseek` 或 `ollama` | `deepseek` |
-| `OLLAMA_BASE_URL` | 本地 Ollama 地址 | `http://localhost:11434` |
+| `OLLAMA_BASE_URL` | Ollama 服务地址 | 留空，使用 ollama 时必填 |
 | `OLLAMA_MODEL` | Ollama 模型名 | `qwen2.5:7b` |
 | `DEEPSEEK_API_KEY` | DeepSeek API Key | 必填（provider=deepseek） |
-| `DEEPSEEK_BASE_URL` | DeepSeek 接口地址 | `https://api.deepseek.com` |
-| `DEEPSEEK_MODEL` | 模型名 | `deepseek-chat` |
-| `LLM_TEMPERATURE` | 采样温度 | `0.3` |
-| `LLM_TIMEOUT_SECONDS` | 模型请求超时 | `120` |
-| `AGENT_MAX_HISTORY_MESSAGES` | 消息窗口大小 | `20` |
+
+其余为固定值，写在 `app/config.py` 中：`DEEPSEEK_BASE_URL=https://api.deepseek.com`、`DEEPSEEK_MODEL=deepseek-flash`、温度 `0.3`、超时 `120` 秒、消息窗口 `20`、JWT issuer/audience/ttl、CORS 来源。
 
 ---
 
@@ -461,15 +460,10 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000
 |------|------|------|
 | `AGENT_JWT_SECRET` | backend + agent | **必须一致**，Agent 委托令牌密钥（≥ 32 字符） |
 | `USER_JWT_SECRET` | backend | 用户 JWT 密钥，与 Agent 无关 |
-| `AGENT_JWT_ISSUER` | agent | 默认 `lingani-backend` |
-| `AGENT_JWT_AUDIENCE` | agent | 默认 `lingani-agent` |
-| `AGENT_JWT_TTL_SECONDS` | agent | 默认 `300`，前端拿到的令牌有效期 |
-| `BACKEND_BASE_URL` | agent | `http://localhost:8080` |
-| `BACKEND_TIMEOUT_SECONDS` | agent | 默认 `15` |
-| `AGENT_HOST` / `AGENT_PORT` | agent | 默认 `127.0.0.1` / `8000` |
-| `AGENT_CORS_ORIGINS` | agent | `http://localhost:5173,http://127.0.0.1:5173` |
-| `AGENT_BASE_URL` | frontend（.env） | 默认 `/agent-api`，同源代理 |
-| `VITE_BACKEND_BASE_URL` | frontend（.env） | 默认 `/api`，同源代理 |
+| `BACKEND_BASE_URL` | agent | 本地 `http://localhost:8080`；Docker 中由 compose 注入 `http://backend:8080` |
+| `LLM_PROVIDER` / `OLLAMA_BASE_URL` / `OLLAMA_MODEL` / `DEEPSEEK_API_KEY` | agent | 见第六节 |
+| `VITE_AGENT_BASE_URL` | frontend（.env） | 默认 `/agent-api`，同源代理 |
+| `VITE_BACKEND_BASE_URL` | frontend（.env） | 默认空，同源请求 |
 
 > 密钥只放在 `.env`（已被 `.gitignore` 忽略），仓库内仅保留 `.env.example` 占位值。
 

@@ -445,21 +445,21 @@ CORS：
 
 ## 六、配置说明
 
-`application.yml` 从 `backend/.env` 导入敏感配置（`spring.config.import: optional:file:./.env[.properties]`），所有配置项都支持「环境变量 → 默认值」两级回退。
+`application.yml` 从 `backend/.env` 导入敏感配置（`spring.config.import: optional:file:./.env[.properties]`）。带环境变量的配置项支持「环境变量 → 默认值」两级回退，标注 `—` 的为固定值，直接写在 yml 中。
 
-| 配置项 | 环境变量 | 默认值 | 说明 |
-|--------|----------|--------|------|
-| `server.port` | `SERVER_PORT` | `8080` | 服务端口 |
+| 配置项 | 环境变量 | 值 | 说明 |
+|--------|----------|-----|------|
+| `server.port` | — | `8080` | 服务端口 |
 | `spring.datasource.url` | `DB_URL` | `jdbc:mysql://localhost:3306/lingani?...` | 数据库连接 |
 | `spring.datasource.username` / `password` | `DB_USERNAME` / `DB_PASSWORD` | `root` / 空 | 数据库账号 |
 | `lingani.jwt.user.secret` | `USER_JWT_SECRET` | 本地开发占位值 | USER JWT 密钥 |
-| `lingani.jwt.user.issuer` | `USER_JWT_ISSUER` | `lingani` | USER JWT 签发方 |
-| `lingani.jwt.user.ttl-seconds` | `USER_JWT_TTL_SECONDS` | `604800` | 7 天 |
+| `lingani.jwt.user.issuer` | — | `lingani` | USER JWT 签发方 |
+| `lingani.jwt.user.ttl-seconds` | — | `604800` | 7 天 |
 | `lingani.jwt.agent.secret` | `AGENT_JWT_SECRET` | 空（必须配置） | **必须与 Agent 服务一致** |
-| `lingani.jwt.agent.issuer` | `AGENT_JWT_ISSUER` | `lingani-backend` | |
-| `lingani.jwt.agent.audience` | `AGENT_JWT_AUDIENCE` | `lingani-agent` | |
-| `lingani.jwt.agent.ttl-seconds` | `AGENT_JWT_TTL_SECONDS` | `300` | 5 分钟 |
-| `lingani.cors.allowed-origins` | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | 跨域来源 |
+| `lingani.jwt.agent.issuer` | — | `lingani-backend` | 需与 Agent 侧一致 |
+| `lingani.jwt.agent.audience` | — | `lingani-agent` | 需与 Agent 侧一致 |
+| `lingani.jwt.agent.ttl-seconds` | — | `300` | 5 分钟 |
+| `lingani.cors.allowed-origins` | — | `http://localhost:5173,http://127.0.0.1:5173` | 跨域来源 |
 | `lingani.cycani.token` | `CYCANI_TOKEN` | 空 | 播放直链 Token |
 
 HikariCP：最大连接 10、最小空闲 2、连接超时 30 秒；Jackson 时区 `Asia/Shanghai`、日期格式 `yyyy-MM-dd HH:mm:ss`。
@@ -476,6 +476,8 @@ mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS lingani DEFAULT CHARSET utf8m
 mysql -u root -p lingani < src/main/resources/sql/init.sql
 
 # 2. 配置密钥（backend/.env）
+#    DB_URL=jdbc:mysql://localhost:3306/lingani?...
+#    DB_USERNAME=root
 #    DB_PASSWORD=...
 #    USER_JWT_SECRET=...
 #    AGENT_JWT_SECRET=...   # 必须与 agent/.env 完全一致

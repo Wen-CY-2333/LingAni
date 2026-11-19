@@ -265,7 +265,7 @@ export function clearAgentPageContext() { agentPageContext.value = null }
 | `VITE_BACKEND_BASE_URL` | 空 | 后端地址，留空表示同源（走 Vite 代理） |
 | `VITE_AGENT_BASE_URL` | `/agent-api` | Agent 地址前缀，开发期由代理转发到 8000 |
 
-生产部署时若前后端不同源，需要同时配置这两个变量，并在后端 `CORS_ALLOWED_ORIGINS` 中加入前端域名。
+生产部署采用 nginx 同源反代（`/api`、`/agent-api` 均指向同域），两个变量保持默认值即可，无需填写服务器地址；只有把前端静态资源放到独立域名、后端在另一个域名时，才需要改成完整地址，并在后端 `CORS_ALLOWED_ORIGINS` 中加入前端域名。
 
 ---
 
@@ -301,6 +301,8 @@ npm run build      # 产物输出到 dist/
 | 文件 | 作用 |
 |------|------|
 | `vite.config.js` | 别名 `@`、开发代理、Origin 剥离 |
+| `nginx.conf` | 生产反代：`/api`、`/agent-api`、SPA 回退 |
+| `Dockerfile` | 多阶段构建：Node 打包 + nginx 托管 |
 | `src/router/index.js` | 路由表与权限守卫 |
 | `src/api/backend.js` | axios 实例、拦截器、全部业务接口 |
 | `src/api/agent.js` | 委托令牌获取 + SSE 流式解析 |

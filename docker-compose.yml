@@ -1,0 +1,66 @@
+# 灵漫 LingAni 生产部署编排
+# 使用方式：复制 .env.example 为 .env 并填写后执行 docker compose up -d --build
+name: lingani
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: lingani
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # 仅在数据卷为空（首次启动）时自动执行；后续改表需手动执行 SQL
+      - ./backend/src/main/resources/sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro,z
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Shanghai
+      DB_URL: jdbc:mysql://mysql:3306/lingani?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      USER_JWT_SECRET: ${USER_JWT_SECRET}
+      AGENT_JWT_SECRET: ${AGENT_JWT_SECRET}
+      CYCANI_TOKEN: ${CYCANI_TOKEN}
+
+  agent:
+    build:
+      context: ./agent
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      TZ: Asia/Shanghai
+      BACKEND_BASE_URL: http://backend:8080
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      AGENT_JWT_SECRET: ${AGENT_JWT_SECRET}
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - agent
+    ports:
+      - "80:80"
+
+volumes:
+  mysql-data:

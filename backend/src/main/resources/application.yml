@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:8080}
+  port: 8080
 
 spring:
   application:
@@ -36,17 +36,18 @@ lingani:
     # 用户登录令牌（USER JWT）：长期身份凭据，登录后签发，用于访问全部受保护业务接口
     user:
       secret: "${USER_JWT_SECRET:lingani-local-dev-secret-change-me-0123456789abcdef}"
-      issuer: ${USER_JWT_ISSUER:lingani}
-      ttl-seconds: ${USER_JWT_TTL_SECONDS:604800}
+      issuer: lingani
+      ttl-seconds: 604800
     # Agent 委托令牌（AGENT JWT）：短期委托凭据，仅供单次 AI 对话链路使用，默认 5 分钟失效
     # 密钥必须与 Python Agent 服务侧的 AGENT_JWT_SECRET 完全一致
     agent:
       secret: "${AGENT_JWT_SECRET:}"
-      issuer: "${AGENT_JWT_ISSUER:lingani-backend}"
-      audience: "${AGENT_JWT_AUDIENCE:lingani-agent}"
-      ttl-seconds: "${AGENT_JWT_TTL_SECONDS:300}"
+      # 以下固定值必须与 Python Agent 侧的 AGENT_JWT_ISSUER / AGENT_JWT_AUDIENCE 保持一致
+      issuer: lingani-backend
+      audience: lingani-agent
+      ttl-seconds: 300
   cors:
-    allowed-origins: "${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}"
+    allowed-origins: "http://localhost:5173,http://127.0.0.1:5173"
   cycani:
     token: "${CYCANI_TOKEN:}"
 
