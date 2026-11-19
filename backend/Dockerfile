@@ -1,8 +1,7 @@
-# 灵漫后端：Spring Boot + JDK 17
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /build
 
-# 使用国内 Maven 镜像，服务器无法访问 Maven Central 时也能构建
+# 使用国内 Maven 镜像
 COPY maven-settings.xml /root/.m2/settings.xml
 
 COPY pom.xml ./

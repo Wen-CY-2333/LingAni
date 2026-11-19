@@ -1,4 +1,3 @@
-# 灵漫前端：Vite 构建 + nginx 托管
 FROM node:22-alpine AS build
 WORKDIR /app
 

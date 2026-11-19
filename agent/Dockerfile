@@ -1,4 +1,3 @@
-# 灵漫 AI Agent：FastAPI + LangGraph
 FROM python:3.13-slim
 WORKDIR /app
 
